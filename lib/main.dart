@@ -57,7 +57,9 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Note App',
           theme: ThemeData(primarySwatch: Colors.indigo),
-          initialRoute: '/login',
+          home: FirebaseAuth.instance.currentUser == null
+              ? const LoginScreen()
+              : const NotesScreen(),
           routes: {
             '/login': (_) => const LoginScreen(),
             '/signup': (_) => const SignupScreen(),

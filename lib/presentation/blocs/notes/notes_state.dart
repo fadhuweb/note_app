@@ -15,3 +15,6 @@ class NotesError extends NotesState {
   final String message;
   NotesError(this.message);
 }
+
+// ✅ Add this to show SnackBars after add, update, delete
+class NotesActionSuccess extends NotesState {}
