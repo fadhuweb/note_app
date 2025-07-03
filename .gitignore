@@ -1,0 +1,16 @@
+# Flutter
+.dart_tool/
+.packages
+build/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+.pub-cache/
+*.lock
+
+# Firebase config files (you should NOT push these)
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# VS Code / IntelliJ
+.vscode/
+.idea/
