@@ -136,8 +136,7 @@ class _NotesScreenState extends State<NotesScreen> {
       appBar: AppBar(
         title: const Text('Notes'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
+          TextButton.icon(
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               if (!mounted) return;
@@ -148,7 +147,9 @@ class _NotesScreenState extends State<NotesScreen> {
 
               Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
             },
-          )
+            icon: const Icon(Icons.logout, color: Colors.white),
+            label: const Text("Logout", style: TextStyle(color: Colors.white)),
+          ),
         ],
       ),
       body: BlocListener<NotesBloc, NotesState>(
