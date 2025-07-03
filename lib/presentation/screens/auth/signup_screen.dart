@@ -15,7 +15,40 @@ class _SignupScreenState extends State<SignupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true; // 👁️ Password visibility toggle
+  bool _obscurePassword = true;
+
+  String _passwordStrength = '';
+
+  void _updatePasswordStrength(String password) {
+    setState(() {
+      if (password.isEmpty) {
+        _passwordStrength = '';
+      } else if (password.length < 6) {
+        _passwordStrength = 'Too short';
+      } else if (password.length < 8) {
+        _passwordStrength = 'Weak';
+      } else if (!RegExp(r'[A-Z]').hasMatch(password) ||
+          !RegExp(r'[0-9]').hasMatch(password)) {
+        _passwordStrength = 'Medium';
+      } else {
+        _passwordStrength = 'Strong';
+      }
+    });
+  }
+
+  Color _getStrengthColor(String strength) {
+    switch (strength) {
+      case 'Weak':
+      case 'Too short':
+        return Colors.red;
+      case 'Medium':
+        return Colors.orange;
+      case 'Strong':
+        return Colors.green;
+      default:
+        return Colors.transparent;
+    }
+  }
 
   void _signup(BuildContext context) {
     if (_formKey.currentState!.validate()) {
@@ -65,13 +98,18 @@ class _SignupScreenState extends State<SignupScreen> {
                         const SizedBox(height: 24),
                         TextFormField(
                           controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
                           decoration: const InputDecoration(
                             labelText: "Email",
                             prefixIcon: Icon(Icons.email),
                             border: OutlineInputBorder(),
                           ),
                           validator: (value) {
-                            if (value == null || !value.contains('@')) {
+                            if (value == null || value.isEmpty) {
+                              return "Email is required";
+                            }
+                            final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                            if (!emailRegex.hasMatch(value)) {
                               return "Enter a valid email";
                             }
                             return null;
@@ -81,6 +119,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
+                          onChanged: _updatePasswordStrength,
                           decoration: InputDecoration(
                             labelText: "Password",
                             prefixIcon: const Icon(Icons.lock),
@@ -103,12 +142,34 @@ class _SignupScreenState extends State<SignupScreen> {
                             return null;
                           },
                         ),
+                        if (_passwordStrength.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Strength: ',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                                Text(
+                                  _passwordStrength,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: _getStrengthColor(_passwordStrength),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         const SizedBox(height: 24),
                         state is AuthLoading
                             ? const CircularProgressIndicator()
-                            : ElevatedButton(
-                                onPressed: () => _signup(context),
-                                child: const Text("Sign Up"),
+                            : SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () => _signup(context),
+                                  child: const Text("Sign Up"),
+                                ),
                               ),
                         const SizedBox(height: 12),
                         TextButton(

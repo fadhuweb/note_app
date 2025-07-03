@@ -15,7 +15,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true; // 👁️ Toggle state
+  bool _obscurePassword = true;
 
   void _login(BuildContext context) {
     if (_formKey.currentState!.validate()) {
@@ -35,11 +35,17 @@ class _LoginScreenState extends State<LoginScreen> {
         listener: (context, state) {
           if (state is AuthFailure) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
             );
           } else if (state is AuthSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Login Successful"), backgroundColor: Colors.green),
+              const SnackBar(
+                content: Text("Login Successful"),
+                backgroundColor: Colors.green,
+              ),
             );
             Navigator.pushReplacementNamed(context, '/notes');
           }
@@ -65,13 +71,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         TextFormField(
                           controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
                           decoration: const InputDecoration(
                             labelText: "Email",
                             prefixIcon: Icon(Icons.email),
                             border: OutlineInputBorder(),
                           ),
                           validator: (value) {
-                            if (value == null || !value.contains('@')) {
+                            if (value == null || value.isEmpty) {
+                              return "Email is required";
+                            }
+                            final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                            if (!emailRegex.hasMatch(value)) {
                               return "Enter a valid email";
                             }
                             return null;
@@ -106,9 +117,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 24),
                         state is AuthLoading
                             ? const CircularProgressIndicator()
-                            : ElevatedButton(
-                                onPressed: () => _login(context),
-                                child: const Text("Log In"),
+                            : SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () => _login(context),
+                                  child: const Text("Log In"),
+                                ),
                               ),
                         const SizedBox(height: 12),
                         TextButton(
