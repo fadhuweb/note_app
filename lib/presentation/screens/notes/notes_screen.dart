@@ -27,15 +27,30 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   void _showNoteDialog({NoteModel? note}) {
-    final controller = TextEditingController(text: note?.text ?? '');
+    final titleController = TextEditingController(text: note?.title ?? '');
+    final contentController = TextEditingController(text: note?.content ?? '');
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: Text(note == null ? 'Add Note' : 'Edit Note'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: 'Enter note'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: contentController,
+              maxLines: 5,
+              decoration: const InputDecoration(
+                hintText: 'Write your note...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -44,21 +59,26 @@ class _NotesScreenState extends State<NotesScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              final text = controller.text.trim();
+              final title = titleController.text.trim();
+              final content = contentController.text.trim();
               final userId = FirebaseAuth.instance.currentUser?.uid;
-              if (text.isNotEmpty && userId != null) {
+
+              if (title.isNotEmpty && content.isNotEmpty && userId != null) {
                 if (note == null) {
-                  final id = const Uuid().v4();
-                  context.read<NotesBloc>().add(AddNote(
-                        NoteModel(
-                          id: id,
-                          text: text,
-                          timestamp: DateTime.now(),
-                          userId: userId,
-                        ),
-                      ));
+                  final newNote = NoteModel(
+                    id: const Uuid().v4(),
+                    title: title,
+                    content: content,
+                    timestamp: DateTime.now(),
+                    userId: userId,
+                  );
+                  context.read<NotesBloc>().add(AddNote(newNote));
                 } else {
-                  context.read<NotesBloc>().add(UpdateNote(note.id, text));
+                  final updatedNote = note.copyWith(
+                    title: title,
+                    content: content,
+                  );
+                  context.read<NotesBloc>().add(UpdateNote(updatedNote.id, title, content, userId));
                 }
                 Navigator.pop(context);
               }
@@ -71,6 +91,9 @@ class _NotesScreenState extends State<NotesScreen> {
   }
 
   void _confirmDelete(String noteId) {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -83,9 +106,10 @@ class _NotesScreenState extends State<NotesScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              context.read<NotesBloc>().add(DeleteNote(noteId));
+              context.read<NotesBloc>().add(DeleteNote(noteId, userId));
               Navigator.pop(context);
             },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             child: const Text('Delete'),
           ),
         ],
@@ -138,23 +162,58 @@ class _NotesScreenState extends State<NotesScreen> {
                 itemBuilder: (context, index) {
                   final note = notes[index];
                   final formattedDate = DateFormat('MMM d, y – h:mm a').format(note.timestamp);
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 6),
-                    child: ListTile(
-                      title: Text(note.text),
-                      subtitle: Text(formattedDate),
-                      trailing: Wrap(
-                        spacing: 12,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit),
-                            onPressed: () => _showNoteDialog(note: note),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete),
-                            onPressed: () => _confirmDelete(note.id),
-                          ),
-                        ],
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                    child: Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              note.title,
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              note.content,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      formattedDate,
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                                Row(
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, color: Colors.deepPurple),
+                                      onPressed: () => _showNoteDialog(note: note),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                      onPressed: () => _confirmDelete(note.id),
+                                    ),
+                                  ],
+                                )
+                              ],
+                            )
+                          ],
+                        ),
                       ),
                     ),
                   );

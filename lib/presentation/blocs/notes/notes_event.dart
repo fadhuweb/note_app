@@ -14,11 +14,14 @@ class AddNote extends NotesEvent {
 
 class UpdateNote extends NotesEvent {
   final String id;
-  final String newText;
-  UpdateNote(this.id, this.newText);
+  final String newTitle;
+  final String newContent;
+  final String userId;  // add userId here
+  UpdateNote(this.id, this.newTitle, this.newContent, this.userId);
 }
 
 class DeleteNote extends NotesEvent {
   final String id;
-  DeleteNote(this.id);
+  final String userId;  // add userId here
+  DeleteNote(this.id, this.userId);
 }

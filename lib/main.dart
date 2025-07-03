@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'firebase_options.dart';
 
@@ -17,6 +18,7 @@ import 'presentation/blocs/notes/notes_bloc.dart';
 import 'presentation/screens/auth/login_screen.dart';
 import 'presentation/screens/auth/signup_screen.dart';
 import 'presentation/screens/notes/notes_screen.dart';
+import 'presentation/screens/splash_screen.dart'; // ✅ Splash screen
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,10 +58,32 @@ class MyApp extends StatelessWidget {
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
           title: 'Note App',
-          theme: ThemeData(primarySwatch: Colors.indigo),
-          home: FirebaseAuth.instance.currentUser == null
-              ? const LoginScreen()
-              : const NotesScreen(),
+
+          // 🎨 Light Theme with Garamond
+          theme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.light,
+            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+            scaffoldBackgroundColor: Colors.white,
+            textTheme: GoogleFonts.ebGaramondTextTheme(),
+          ),
+
+          // 🌑 Dark Theme
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            brightness: Brightness.dark,
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: Colors.deepPurple,
+              brightness: Brightness.dark,
+            ),
+            textTheme: GoogleFonts.ebGaramondTextTheme(
+              ThemeData(brightness: Brightness.dark).textTheme,
+            ),
+          ),
+
+          themeMode: ThemeMode.system,
+
+          home: const SplashScreen(), // ✅ Now starts with splash
           routes: {
             '/login': (_) => const LoginScreen(),
             '/signup': (_) => const SignupScreen(),
