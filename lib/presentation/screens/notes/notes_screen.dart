@@ -90,7 +90,7 @@ class _NotesScreenState extends State<NotesScreen> {
     );
   }
 
-  void _confirmDelete(String noteId) {
+  void _confirmDelete(NoteModel note) {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
@@ -105,11 +105,24 @@ class _NotesScreenState extends State<NotesScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
-              context.read<NotesBloc>().add(DeleteNote(noteId, userId));
-              Navigator.pop(context);
-            },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              context.read<NotesBloc>().add(DeleteNote(note.id, userId));
+              Navigator.pop(context);
+
+              // 🟣 Snackbar with Undo
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text('Note deleted'),
+                  action: SnackBarAction(
+                    label: 'Undo',
+                    onPressed: () {
+                      context.read<NotesBloc>().add(AddNote(note));
+                    },
+                  ),
+                ),
+              );
+            },
             child: const Text('Delete'),
           ),
         ],
@@ -128,6 +141,11 @@ class _NotesScreenState extends State<NotesScreen> {
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               if (!mounted) return;
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Logged out successfully 🚪')),
+              );
+
               Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
             },
           )
@@ -137,11 +155,11 @@ class _NotesScreenState extends State<NotesScreen> {
         listener: (context, state) {
           if (state is NotesError) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Error: ${state.message}')),
+              SnackBar(content: Text('Error: ${state.message}'), backgroundColor: Colors.red),
             );
           } else if (state is NotesActionSuccess) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Action successful')),
+              const SnackBar(content: Text('Note saved ✅')),
             );
           }
         },
@@ -177,7 +195,10 @@ class _NotesScreenState extends State<NotesScreen> {
                           children: [
                             Text(
                               note.title,
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                             const SizedBox(height: 6),
                             Text(
@@ -190,7 +211,8 @@ class _NotesScreenState extends State<NotesScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                                    const Icon(Icons.calendar_today,
+                                        size: 14, color: Colors.grey),
                                     const SizedBox(width: 4),
                                     Text(
                                       formattedDate,
@@ -206,7 +228,7 @@ class _NotesScreenState extends State<NotesScreen> {
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.redAccent),
-                                      onPressed: () => _confirmDelete(note.id),
+                                      onPressed: () => _confirmDelete(note),
                                     ),
                                   ],
                                 )
