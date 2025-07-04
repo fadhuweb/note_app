@@ -38,8 +38,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Color _getStrengthColor(String strength) {
     switch (strength) {
-      case 'Weak':
       case 'Too short':
+      case 'Weak':
         return Colors.red;
       case 'Medium':
         return Colors.orange;
@@ -165,7 +165,8 @@ class _SignupScreenState extends State<SignupScreen> {
                         state is AuthLoading
                             ? const CircularProgressIndicator()
                             : SizedBox(
-                                width: double.infinity,
+                                width: 160,
+                                height: 45,
                                 child: ElevatedButton(
                                   onPressed: () => _signup(context),
                                   child: const Text("Sign Up"),
