@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter/services.dart'; // 👈 for SystemNavigator.pop()
+import 'package:flutter/services.dart';
 
 import '../../../domain/models/note_model.dart';
 import '../../blocs/notes/notes_bloc.dart';
@@ -18,6 +18,8 @@ class NotesScreen extends StatefulWidget {
 }
 
 class _NotesScreenState extends State<NotesScreen> {
+  String _selectedTag = 'All';
+
   @override
   void initState() {
     super.initState();
@@ -29,59 +31,79 @@ class _NotesScreenState extends State<NotesScreen> {
 
   Future<bool> _onWillPop() async {
     return await showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Exit App"),
-        content: const Text("Do you want to logout or exit the app?"),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              if (!mounted) return;
-              Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
-            },
-            child: const Text("Logout"),
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text("Exit App"),
+            content: const Text("Do you want to logout or exit the app?"),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  if (!mounted) return;
+                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+                },
+                child: const Text("Logout"),
+              ),
+              TextButton(
+                onPressed: () {
+                  SystemNavigator.pop();
+                },
+                child: const Text("Exit"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancel"),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              SystemNavigator.pop(); // Exits the app
-            },
-            child: const Text("Exit"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
   }
 
   void _showNoteDialog({NoteModel? note}) {
     final titleController = TextEditingController(text: note?.title ?? '');
     final contentController = TextEditingController(text: note?.content ?? '');
+    String selectedTag = note?.tag ?? 'General';
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: Text(note == null ? 'Add Note' : 'Edit Note'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: contentController,
-              maxLines: 5,
-              decoration: const InputDecoration(
-                hintText: 'Write your note...',
-                border: OutlineInputBorder(),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: const InputDecoration(labelText: 'Title'),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              TextField(
+                controller: contentController,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  hintText: 'Write your note...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: selectedTag,
+                decoration: const InputDecoration(
+                  labelText: 'Tag',
+                  border: OutlineInputBorder(),
+                ),
+                items: ['General', 'Work', 'School', 'Personal', 'Other']
+                    .map((tag) => DropdownMenuItem(value: tag, child: Text(tag)))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    selectedTag = value;
+                  }
+                },
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -102,14 +124,22 @@ class _NotesScreenState extends State<NotesScreen> {
                     content: content,
                     timestamp: DateTime.now(),
                     userId: userId,
+                    tag: selectedTag,
                   );
                   context.read<NotesBloc>().add(AddNote(newNote));
                 } else {
                   final updatedNote = note.copyWith(
                     title: title,
                     content: content,
+                    tag: selectedTag,
                   );
-                  context.read<NotesBloc>().add(UpdateNote(updatedNote.id, title, content, userId));
+                  context.read<NotesBloc>().add(UpdateNote(
+                    updatedNote.id,
+                    updatedNote.title,
+                    updatedNote.content,
+                    updatedNote.userId,
+                    updatedNote.tag,
+                  ));
                 }
                 Navigator.pop(context);
               }
@@ -162,25 +192,44 @@ class _NotesScreenState extends State<NotesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Notes'),
           actions: [
+            DropdownButton<String>(
+              value: _selectedTag,
+              underline: const SizedBox(),
+              dropdownColor: Theme.of(context).colorScheme.surface,
+              items: ['All', 'General', 'Work', 'School', 'Personal', 'Other']
+                  .map((tag) => DropdownMenuItem(value: tag, child: Text(tag)))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedTag = value);
+                }
+              },
+            ),
             TextButton.icon(
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
                 if (!mounted) return;
-
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Logged out successfully 🚪')),
                 );
-
                 Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
               },
-              icon: const Icon(Icons.logout, color: Colors.white),
-              label: const Text("Logout", style: TextStyle(color: Colors.white)),
+              icon: Icon(
+                Icons.logout,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              label: Text(
+                "Logout",
+                style: TextStyle(color: isDark ? Colors.white : Colors.black),
+              ),
             ),
           ],
         ),
@@ -201,18 +250,23 @@ class _NotesScreenState extends State<NotesScreen> {
               if (state is NotesLoading) {
                 return const Center(child: CircularProgressIndicator());
               } else if (state is NotesLoaded) {
-                final notes = state.notes;
+                final notes = _selectedTag == 'All'
+                    ? state.notes
+                    : state.notes.where((note) => note.tag == _selectedTag).toList();
+
                 if (notes.isEmpty) {
                   return const Center(
                     child: Text("Nothing here yet—tap ➕ to add a note."),
                   );
                 }
+
                 return ListView.builder(
                   padding: const EdgeInsets.all(12),
                   itemCount: notes.length,
                   itemBuilder: (context, index) {
                     final note = notes[index];
-                    final formattedDate = DateFormat('MMM d, y – h:mm a').format(note.timestamp);
+                    final formattedDate =
+                        DateFormat('MMM d, y – h:mm a').format(note.timestamp);
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -226,6 +280,31 @@ class _NotesScreenState extends State<NotesScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Row(
+                                children: [
+                                  Chip(
+                                    label: Text(
+                                      note.tag,
+                                      style: TextStyle(
+                                        color: isDark ? Colors.black : Colors.white,
+                                      ),
+                                    ),
+                                    backgroundColor: isDark
+                                        ? Colors.purple[200]
+                                        : Colors.deepPurple,
+                                  ),
+                                  const Spacer(),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.deepPurple),
+                                    onPressed: () => _showNoteDialog(note: note),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                    onPressed: () => _confirmDelete(note),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
                               Text(
                                 note.title,
                                 style: Theme.of(context)
@@ -240,32 +319,15 @@ class _NotesScreenState extends State<NotesScreen> {
                               ),
                               const SizedBox(height: 12),
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        formattedDate,
-                                        style: Theme.of(context).textTheme.bodySmall,
-                                      ),
-                                    ],
+                                  const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    formattedDate,
+                                    style: Theme.of(context).textTheme.bodySmall,
                                   ),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit, color: Colors.deepPurple),
-                                        onPressed: () => _showNoteDialog(note: note),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.redAccent),
-                                        onPressed: () => _confirmDelete(note),
-                                      ),
-                                    ],
-                                  )
                                 ],
-                              )
+                              ),
                             ],
                           ),
                         ),

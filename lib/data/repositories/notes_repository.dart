@@ -24,12 +24,8 @@ class NotesRepository implements INotesRepository {
   }
 
   @override
-  Future<void> updateNote(String id, String newTitle, String newContent) async {
-    await firestore.collection('notes').doc(id).update({
-      'title': newTitle,
-      'text': newContent,
-      'timestamp': DateTime.now().toIso8601String(), // Optional: update timestamp
-    });
+  Future<void> updateNote(NoteModel note) async {
+    await firestore.collection('notes').doc(note.id).update(note.toMap());
   }
 
   @override

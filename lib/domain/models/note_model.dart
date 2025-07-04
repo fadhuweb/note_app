@@ -4,6 +4,7 @@ class NoteModel {
   final String content;
   final DateTime timestamp;
   final String userId;
+  final String tag; // ✅ NEW: tag field
 
   NoteModel({
     required this.id,
@@ -11,6 +12,7 @@ class NoteModel {
     required this.content,
     required this.timestamp,
     required this.userId,
+    required this.tag, // ✅
   });
 
   NoteModel copyWith({
@@ -19,6 +21,7 @@ class NoteModel {
     String? content,
     DateTime? timestamp,
     String? userId,
+    String? tag, // ✅
   }) {
     return NoteModel(
       id: id ?? this.id,
@@ -26,6 +29,7 @@ class NoteModel {
       content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
       userId: userId ?? this.userId,
+      tag: tag ?? this.tag, // ✅
     );
   }
 
@@ -36,6 +40,7 @@ class NoteModel {
       'content': content,
       'timestamp': timestamp.toIso8601String(),
       'userId': userId,
+      'tag': tag, // ✅
     };
   }
 
@@ -46,6 +51,7 @@ class NoteModel {
       content: map['content'] ?? '',
       timestamp: DateTime.parse(map['timestamp']),
       userId: map['userId'] ?? '',
+      tag: map['tag'] ?? 'General', // ✅ default tag
     );
   }
 }
