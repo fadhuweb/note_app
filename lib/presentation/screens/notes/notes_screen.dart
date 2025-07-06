@@ -25,39 +25,42 @@ class _NotesScreenState extends State<NotesScreen> {
     super.initState();
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId != null) {
-      context.read<NotesBloc>().add(FetchNotes(userId));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<NotesBloc>().add(FetchNotes(userId));
+        }
+      });
     }
   }
 
   Future<bool> _onWillPop() async {
-    return await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text("Exit App"),
-            content: const Text("Do you want to logout or exit the app?"),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  if (!mounted) return;
-                  Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
-                },
-                child: const Text("Logout"),
-              ),
-              TextButton(
-                onPressed: () {
-                  SystemNavigator.pop();
-                },
-                child: const Text("Exit"),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("Cancel"),
-              ),
-            ],
+    final shouldPop = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Exit App"),
+        content: const Text("Do you want to logout or exit the app?"),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              if (mounted) {
+                Navigator.of(context).pushNamedAndRemoveUntil('/login', (_) => false);
+              }
+            },
+            child: const Text("Logout"),
           ),
-        ) ??
-        false;
+          TextButton(
+            onPressed: () => SystemNavigator.pop(),
+            child: const Text("Exit"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+        ],
+      ),
+    );
+    return shouldPop ?? false;
   }
 
   void _showNoteDialog({NoteModel? note}) {
@@ -216,11 +219,12 @@ class _NotesScreenState extends State<NotesScreen> {
             TextButton.icon(
               onPressed: () async {
                 await FirebaseAuth.instance.signOut();
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Logged out successfully 🚪')),
-                );
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Logged out successfully 🚪')),
+                  );
+                  Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+                }
               },
               icon: Icon(
                 Icons.logout,

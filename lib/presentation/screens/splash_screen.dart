@@ -29,6 +29,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _controller.forward();
 
     Future.delayed(const Duration(seconds: 3), () {
+      if (!mounted) return;
       final user = FirebaseAuth.instance.currentUser;
 
       if (user != null) {
@@ -51,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: theme.colorScheme.surface,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -71,8 +72,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             CircularProgressIndicator(
               color: theme.colorScheme.primary,
               backgroundColor: isDark
-                  ? theme.colorScheme.onSurface.withOpacity(0.2)
-                  : theme.colorScheme.primary.withOpacity(0.3),
+                  ? theme.colorScheme.onSurface.withAlpha(51) // ~0.2 opacity
+                  : theme.colorScheme.primary.withAlpha(77),  // ~0.3 opacity
             ),
           ],
         ),

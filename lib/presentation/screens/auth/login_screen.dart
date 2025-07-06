@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/auth/auth_bloc.dart';
@@ -32,6 +33,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _checkBiometricAvailability() async {
     final available = await _authHelper.canCheckBiometrics();
+    if (!mounted) return;
     setState(() {
       _canUseBiometrics = available;
     });
@@ -39,6 +41,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _authenticateWithBiometrics() async {
     final success = await _authHelper.authenticate();
+    if (!mounted) return;
+
     if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Biometric authentication failed.")),
@@ -49,11 +53,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = await _secureStorage.read(key: 'email');
     final password = await _secureStorage.read(key: 'password');
 
+    if (!mounted) return;
+
     if (email == null || password == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("No saved credentials. Log in manually first."),
-        ),
+        const SnackBar(content: Text("No saved credentials. Log in manually first.")),
       );
       return;
     }
@@ -63,13 +67,14 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/notes');
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Firebase login failed: ${e.toString()}")),
       );
     }
   }
 
-  void _login(BuildContext context) async {
+  Future<void> _login(BuildContext context) async {
     if (_formKey.currentState!.validate()) {
       final email = _emailController.text.trim();
       final password = _passwordController.text.trim();
@@ -77,7 +82,8 @@ class _LoginScreenState extends State<LoginScreen> {
       await _secureStorage.write(key: 'email', value: email);
       await _secureStorage.write(key: 'password', value: password);
 
-      BlocProvider.of<AuthBloc>(context).add(SignInRequested(email, password));
+      if (!context.mounted) return;
+      context.read<AuthBloc>().add(SignInRequested(email, password));
     }
   }
 
@@ -102,6 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
             onPressed: () async {
               final email = resetController.text.trim();
               if (email.isEmpty || !email.contains("@")) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Please enter a valid email.")),
                 );
@@ -110,11 +117,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
               try {
                 await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("Reset link sent to $email")),
                 );
               } catch (e) {
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("Error: ${e.toString()}")),
